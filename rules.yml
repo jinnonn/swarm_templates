@@ -1,0 +1,55 @@
+groups:
+- name: AllInstances
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 1m
+    annotations:
+      title: 'Instance {{ $labels.instance }} down'
+      description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute.'
+    labels:
+      severity: 'critical'
+
+- name: SamaraIsLeader
+  rules:
+  - alert: SamaraIsLeader
+    expr: swarm_manager_leader{instance=~"swarm-manager"} == 1
+    for: 10s
+    annotations:
+      title: 'Node {{ $labels.instance }} is Swarm Leader now!'
+      description: '{{ $labels.instance }} of job {{ $labels.job }} located in Samara became Swarm Leader.'
+    labels:
+      severity: 'critical'
+
+- name: Node_Availability_Inside_Swarm
+  rules:
+  - alert: Node_in_swarm_is_in_trouble
+    expr: swarm_manager_nodes{state=~'unknown|disconnected|down'} > 0
+    for: 15s
+    annotations:
+      title: 'Node {{ $labels.instance }} detects "{{ $labels.state }}" state!'
+      description: '{{ $labels.instance }} of job {{ $labels.job }} detects "{{ $labels.state }}" state for more than 15 seconds.'
+    labels:
+      severity: 'critical'
+
+- name: Quorum_alert
+  rules:
+  - alert: Managers_less_than_2
+    expr: sum(swarm_node_manager) < 2
+    for: 30s
+    annotations:
+      title: 'Swarm managers less than 2, Quorum is in danger!'
+      description: 'Swarm managers less than 2, Quorum is in danger for more than 30 seconds.'
+    labels:
+      severity: 'critical'
+
+- name: container_state
+  rules:
+  - alert: container_is_not_running
+    expr: time() - container_last_seen > 60
+    for: 60s
+    annotations:
+      title: 'Container {{ $labels.name }} is not running more than 1 min on instance {{ $labels.instance }}!'
+      description: 'Reported by {{ $labels.job }}'
+    labels:
+      severity: 'critical'
